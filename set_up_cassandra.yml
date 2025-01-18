@@ -1,0 +1,55 @@
+---
+- name: Configuración de Cassandra y subida a GitHub
+  hosts: cassandra_server
+  become: yes
+  tasks:
+    # 1. Instalar Git
+    - name: Instalar Git
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+
+    # 2. Configurar usuario y correo de Git
+    - name: Configurar usuario de Git
+      git_config:
+        name: user.name
+        scope: global
+        value: "Tu Nombre"
+    - name: Configurar correo de Git
+      git_config:
+        name: user.email
+        scope: global
+        value: "tuemail@example.com"
+
+    # 3. Clonar el repositorio remoto (si no existe)
+    - name: Clonar repositorio de Cassandra
+      git:
+        repo: "git@github.com:nisa2217/cassandra_repo.git"
+        dest: "/opt/cassandra_repo"
+        version: main
+        key_file: "/root/.ssh/id_ed25519"
+
+    # 4. Copiar archivos al repositorio
+    - name: Copiar archivos de Cassandra al repositorio
+      copy:
+        src: "/etc/cassandra/"
+        dest: "/opt/cassandra_repo/config"
+        remote_src: yes
+
+    # 5. Añadir y hacer commit de los archivos
+    - name: Añadir archivos al repositorio
+      shell: |
+        cd /opt/cassandra_repo
+        git add .
+        git commit -m "Subida inicial de configuración de Cassandra"
+      args:
+        chdir: /opt/cassandra_repo
+
+    # 6. Subir cambios a GitHub
+    - name: Subir cambios al repositorio remoto
+      shell: |
+        cd /opt/cassandra_repo
+        git push origin main
+      args:
+        chdir: /opt/cassandra_repo
